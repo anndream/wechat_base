@@ -19,7 +19,7 @@ class Partner(models.Model):
             data["action_name"] = "QR_LIMIT_SCENE"
             data["action_info"] = {"scene": {"scene_id": partner.id}}
 
-            wechat = tool.token_tool.get_new_basic_wechat_client()
+            wechat = tool.token_tool.get_wechat_client()
             ret = wechat.create_qrcode(data)
             url = "https://mp.weixin.qq.com/cgi-bin/showqrcode?ticket=%s" % ret["ticket"]
 
@@ -31,7 +31,7 @@ class Partner(models.Model):
     def send_template_message(self, wechat_template_id, data, url='', topcolor='#FF0000'):
         for partner in self:
             def send_message(*args):
-                wechat = tool.token_tool.get_new_wechat_client_with_token()
+                wechat = tool.token_tool.get_wechat_client()
                 wechat.send_template_message(*args)
 
             threaded_wechat_sending = threading.Thread(target=send_message, args=(
