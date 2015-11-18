@@ -1,30 +1,14 @@
+# coding=utf-8
 from wechat_sdk import WechatBasic
 import time
 
 wechat_appid = "wxf7b5bd13112fe9fc"
 wechat_appsecret = "2d150d1243c72816c3d67645c39154b4"
-cur_token = None
+wechat_token = "o1q3XK7oem2dCAp8H2EiTiFB9DsoSJxefDmj6xjcMxIJ_lqkhRtt3c9Y_wZEfp1C4aDD6Yy3LF4gIZTPdpJOV1u5FocWUCGzepLn2N3H4RUMEMgAEAZRZ-EVPwCyNWgSOQZ17Na970QP4dC4unJGwYQIlz9TfpwFXSaABASKF"
+
+wechat = WechatBasic(token=wechat_token, appid=wechat_appid, appsecret=wechat_appsecret)
 
 
-def token_refresh_decorator(wechat_function):
-    def wrapper(*args, **kwargs):
-        global cur_token
-        if not cur_token or cur_token["access_token_expires_at"] - 60 < int(time.time()):
-            wechat = WechatBasic(appid=wechat_appid, appsecret=wechat_appsecret)
-            wechat.grant_token(True)
-            cur_token = wechat.get_access_token()
-        return wechat_function(*args, **kwargs)
-
-    return wrapper
-
-
-def get_new_basic_wechat_client():
-    wechat = WechatBasic(appid=wechat_appid, appsecret=wechat_appsecret)
-    return wechat
-
-
-@token_refresh_decorator
-def get_new_wechat_client_with_token():
-    wechat = WechatBasic(appid=wechat_appid, appsecret=wechat_appsecret,
-                         token=cur_token["access_token"])
+# 最简单的单例实现，需要改进。
+def get_wechat_client():
     return wechat

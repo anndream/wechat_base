@@ -8,6 +8,15 @@ from wechat_sdk.messages import (
 )
 
 
+def bind_user(source, key):
+    openid = source
+    partner_id = int(key)
+    partner = request.env["res.partner"].sudo().search([("id", "=", partner_id)])
+    partner.ensure_one()
+    partner.wechat_openID = source
+    return partner_id, partner.name, openid
+
+
 class Weixin(openerp.http.Controller):
     @openerp.http.route("/weixin", type='http', auth="public", methods=["GET", "POST"])
     def index(self, **kwargs):
@@ -22,10 +31,9 @@ class Weixin(openerp.http.Controller):
 
         body_text = request.httprequest.data
 
-        wechat = tool.token_tool.get_new_wechat_client_with_token()
+        wechat = tool.token_tool.get_wechat_client()
 
-        #TODO check_signature 总是失败。
-        if True:  # wechat.check_signature(signature=signature, timestamp=timestamp, nonce=nonce):
+        if wechat.check_signature(signature=signature, timestamp=timestamp, nonce=nonce):
             wechat.parse_data(body_text)
             message = wechat.get_message()
             response = None
@@ -45,18 +53,18 @@ class Weixin(openerp.http.Controller):
                 if message.type == 'subscribe':  # 关注事件(包括普通关注事件和扫描二维码造成的关注事件)
                     if message.key and message.ticket:  # 如果 key 和 ticket 均不为空，则是扫描二维码造成的关注事件
                         print u'用户尚未关注时的二维码扫描关注事件'
-                        user_id, user_name, openid = self._bind_user(message.source, message.key)
+                        partner_id, partner_name, openid = bind_user(message.source, message.key)
                         response = wechat.response_text(
-                            content=u'用户尚未关注时的二维码扫描关注事件.绑定成功 username:%s openid:%s' % (user_name, openid))
+                            content=u'用户尚未关注时的二维码扫描关注事件.绑定成功 partner name:%s openid:%s' % (partner_name, openid))
                     else:
                         response = wechat.response_text(content=u'普通关注事件')
                 elif message.type == 'unsubscribe':
                     response = wechat.response_text(content=u'取消关注事件')
                 elif message.type == 'scan':
                     if message.key and message.ticket:
-                        user_id, user_name, openid = self._bind_user(message.source, message.key)
+                        partner_id, partner_name, openid = bind_user(message.source, message.key)
                         response = wechat.response_text(
-                            content=u'用户已关注时的二维码扫描事件.绑定成功 username:%s openid:%s' % (user_name, openid))
+                            content=u'用户尚未关注时的二维码扫描关注事件.绑定成功 partner name:%s openid:%s' % (partner_name, openid))
                     else:
                         response = wechat.response_text(content=u'用户已关注时的二维码扫描事件.')
                 elif message.type == 'location':
@@ -68,11 +76,3 @@ class Weixin(openerp.http.Controller):
                 elif message.type == 'templatesendjobfinish':
                     response = wechat.response_text(content=u'模板消息事件')
             return response  # kwargs.get("echostr","success")
-
-    def _bind_user(self, source, key):
-        openid = source
-        user_id = int(key)
-        user = request.env["res.users"].sudo().search([("id", "=", user_id)])
-        user.ensure_one()
-        user.wechat_openID = source
-        return (user_id, user.name, openid)
