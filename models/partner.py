@@ -32,8 +32,8 @@ class Partner(models.Model):
         for partner in self:
             def send_message(*args):
                 wechat = tool.token_tool.get_wechat_client()
-                wechat.send_template_message(*args)
-
+                ret = wechat.send_template_message(*args)
+                pass
             threaded_wechat_sending = threading.Thread(target=send_message, args=(
                 partner.wechat_openID, wechat_template_id, data, url or '', topcolor or '#FF0000'))
             threaded_wechat_sending.start()
